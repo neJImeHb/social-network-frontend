@@ -1,0 +1,82 @@
+.chats-list{
+    width: 100%;
+    background-color: #2e2e2e;
+    height: 75px;
+    margin: 20px;
+    margin-top: 0px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.message-input{
+    border-radius: 5px 0px 0px 5px;
+    color: white;
+    background-color: #2e2e2e;
+    width: 80%;
+}
+
+.message-button{
+    width: 100px;
+    background-color: #2e2e2e;
+    border: none;
+    border-radius: 0px 5px 5px 0px;
+    cursor: pointer;
+    color: white;
+
+    &:hover{
+        background-color: #414141
+    }
+}
+
+.msg-h4{
+    position: absolute;
+    right: 10px;
+    top: -10px;
+}
+
+.msg-h4-2{
+    position: absolute;
+    left: 10px;
+    top: -10px;
+}
+
+.msg-div{
+    min-width: 100px;
+    align-self: flex-end;
+    position: relative;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 20px;
+    margin-top: 10px;
+    margin-right: 20px;
+    background-color:  #373737;
+    border-radius: 5px;
+}
+
+.msg-div-2{
+    min-width: 100px;
+    align-self: flex-start;
+    position: relative;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 20px;
+    margin-top: 10px;
+    margin-left: 30px;
+    background-color:  #373737;
+    border-radius: 5px;
+}
+
+.msg-back-butt{
+    border-radius: 5px 0px 0px 0px;
+    top: 0px;
+    padding-top: 25px;
+    padding-left: 40px;
+    width: 170px;
+    height: 45px;
+    position: absolute;
+    text-decoration: none;
+
+    &:hover{
+        background: linear-gradient(90deg, #3a3a3a 0%, rgb(46, 46, 46) 100%);
+    }
+}
