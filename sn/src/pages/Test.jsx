@@ -1,44 +1,35 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
-const Test = () => {
-    const [randomInt, setRandomInt] = useState();
-    const [socket, setSocket] = useState(null); // Состояние для хранения объекта WebSocket
+function Test() {
+    const [avatarUrl, setAvatarUrl] = useState(null);
+
+    const username = 'neJImeHb'
 
     useEffect(() => {
-        const newSocket = new WebSocket('ws://localhost:8000/ws/messages/');
-        setSocket(newSocket); // Сохраняем WebSocket в состоянии
-
-        newSocket.onmessage = function (e) {
-            const data = JSON.parse(e.data);
-            setRandomInt(data.message);
-            if (data.msg) {
-                console.log(data.msg)
+        const fetchAvatar = async () => {
+            try {
+                const response = await axios.get('http://localhost:8000/api/get_avatar', { params: { username } });
+                if (response.data.avatar_url) {
+                    setAvatarUrl(response.data.avatar_url);
+                }
+            } catch (error) {
+                console.error('Error fetching avatar:', error);
             }
         };
 
-        newSocket.onclose = function (e) {
-            console.log('WebSocket closed unexpectedly', 200);
-        };
-
-        // Cleanup function to close the socket
-        return () => {
-            newSocket.close();
-        };
-    }, []);
-
-    const sendMessage = () => {
-        if (socket) {
-            const jsonMessage = JSON.stringify({ message: 'Hello, server!' });
-            socket.send(jsonMessage);
-        }
-    };
+        fetchAvatar();
+    }, [username]);
 
     return (
         <div>
-            <h1>{randomInt}</h1>
-            <button onClick={sendMessage}>Enter</button>
+            {avatarUrl ? (
+                <img src={avatarUrl} alt="User Avatar"/>
+            ) : (
+                <p>Avatar not found</p>
+            )}
         </div>
     );
-};
+}
 
-export { Test };
+export {Test};

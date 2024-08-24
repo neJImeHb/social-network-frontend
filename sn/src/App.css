@@ -32,14 +32,43 @@
   margin-right: 10px;
   text-decoration: none;
   font-size: 20px;
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 30px;
-  padding-bottom: 20px;
+}
 
+.header_list{
+  color: rgb(214, 32, 32);
+  text-decoration: none;
+  text-align: center;
+  width: 100px;
+  
+  &:hover{
+    background-color: white;
+  }
+}
+
+.header_list_div{
+  font-size: 20px;
+  cursor: pointer;
+  padding: 18px;
+  margin-top: -15px;
+  margin-right: 8px;
   &:hover{
     background-color: rgb(55, 55, 55);
     box-shadow: 0 0 10px rgb(55, 55, 55);
+  }
+}
+
+.header_list_button{
+  position: relative;
+  width: 100%;
+  padding: 10px;
+  font-size: 15px;
+  background-color: rgb(50, 50, 50);
+  border: none;
+  color: white;
+  cursor: pointer;
+
+  &:hover{
+    background-color: rgb(100, 100, 100);
   }
 }
 
@@ -62,6 +91,7 @@
   background-color: #2e2e2e;
   width: 200px;
   color: white;
+  height: 20px;
   border-radius: 5px;
   margin-top: -6px;
   margin-left: 40px;

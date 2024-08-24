@@ -66,7 +66,7 @@ function Login(props) {
             <div style={{ flex: 1, backgroundColor: '#404040', color: 'rgb(0, 112, 224)', display: 'flex', 
                 justifyContent: 'center', alignItems: 'center', flexDirection: 'column', marginTop: '-70px'}}>
                 <h1>Flour <br /> Network</h1>
-                <Link className='bar_a' to='/'>RETURN AT HOME</Link>
+                <Link className='bar_a' to='https://www.youtube.com/watch?v=dQw4w9WgXcQ'>PLACE FOR IDEAS</Link>
             </div>
             <div style={{transition: '1s ease all', flex: 1, backgroundColor: '#000807', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

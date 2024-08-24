@@ -3,10 +3,10 @@ import './css/input.css';
 import './index.css';
 import './css/pages.css';
 import './css/components.css';
-import './css/friends.css'
-import './css/modal.css'
-import './css/loader.css'
-import React, { useEffect, useState, useCallback } from 'react';
+import './css/friends.css';
+import './css/modal.css';
+import './css/loader.css';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -24,8 +24,11 @@ import { AllRequest } from './pages/AllRequest';
 import { Messages } from './pages/Messages';
 import { CurrentChat } from "./components/CurrentChat";
 import { Test } from './pages/Test';
+import ChatTest from './pages/ChatTest';
 
 import { CiSearch } from "react-icons/ci";
+
+import Dropdown from './pages/DropDown';
 
 const App = () => {
   const navigate = useNavigate();
@@ -48,16 +51,21 @@ const App = () => {
     marginTop: '-80px',
     display: 'flex',
     transition: '1s ease all',
+    height: '20px'
   };
 
   const onLink = {
     marginTop: '20px',
-    display: 'flex'
+    display: 'flex',
+    height: '20px'
   };
 
-  const [auth, setAuth] = useState(false);
+  const [auth, setAuth] = useState();
   const [Name, setName] = useState('');
-  const [username, setUsername] = useState('')
+  const [username, setUsername] = useState('');
+  const [userID, setUserID] = useState();
+
+  const socketRef = useRef(null);
 
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem('access_token');
@@ -65,12 +73,13 @@ const App = () => {
       try {
         const response = await axios.get('http://localhost:8000/api/protected/', {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
-        setAuth(response.data.auth);
         setName(response.data.first_name);
         setUsername(response.data.username);
+        setAuth(response.data.auth);
+        setUserID(response.data.id);
       } catch (error) {
         console.error('Error during request: user is not authenticated');
       }
@@ -83,14 +92,34 @@ const App = () => {
     checkAuth();
   }, [checkAuth]);
 
+  useEffect(() => {
+    if (userID && !socketRef.current) {
+      socketRef.current = new WebSocket(`ws://localhost:8000/ws/online/${userID}/`);
+
+      socketRef.current.onopen = () => {
+        console.log('WebSocket connection established');
+      };
+
+      socketRef.current.onclose = () => {
+        console.log('WebSocket connection closed');
+      };
+
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.close();
+        }
+      };
+    }
+  }, [userID]);
+
   return (
     <div>
       <header className='static-block'>
         <div style={isReg ? withoutBack : withBack}>
           <div style={{ marginTop: '0px' }}>
-            <div style={{ display: 'flex', marginLeft: '210px', marginRight: '210px', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', marginLeft: '210px', marginRight: '210px', justifyContent: 'space-between', height: '20px' }}>
               <div style={isReg ? offLink : onLink}>
-                <div style={{ marginTop: '-5px', display: 'flex' }}>
+                <div style={{ marginTop: '-5px', display: 'flex', height: '20px' }}>
                   <Link className='header_a' style={{ color: 'rgb(0, 112, 224)' }} to='/'>Flour network</Link>
                   <input className='header_inp' placeholder='Find new friends' />
                   <CiSearch style={{ position: 'absolute', marginLeft: '200px', marginTop: '5px' }} />
@@ -98,7 +127,9 @@ const App = () => {
               </div>
               <div className='right_box' style={{ marginTop: '15px' }}>
                 {auth ?
-                  <Link className='header_l'>{Name}</Link>
+                  <div>
+                    <Dropdown name={Name} setAuth={setAuth}/>
+                  </div>
                   : <Link className='header_l' to='/login'>Login</Link>
                 }
               </div>
@@ -127,15 +158,16 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register auth={auth} />} />
             <Route path="/login" element={<Login auth={auth} checkAuth={checkAuth} current_username={username} />} />
-            <Route path='/profile/:username' element={<Profile setAuth={setAuth} />} />
+            <Route path='/profile/:username' element={<Profile userID={userID}/>} />
             <Route path="/auth" element={<CheckAuth />} />
             <Route path="/psw" element={<CheckPsw />} />
-            <Route path="/profile/edit" element={<EditProfile />} />
+            <Route path="/profile/edit" element={<EditProfile username={username} />} />
             <Route path="/:username/friends" element={<Friends />} />
             <Route path="/friends/all-request" element={<AllRequest />} />
             <Route path="/messages" element={<Messages />} />
-            <Route path="/messages/chat/:chat_id/companion/:user_id" element={<CurrentChat />} />
+            <Route path="/messages/chat/:chat_id/companion/:user_id" element={<CurrentChat userID={userID} />} />
             <Route path="/test" element={<Test />} />
+            <Route path="/chat-test" element={<ChatTest />} />
           </Routes>
         </div>
       </div>

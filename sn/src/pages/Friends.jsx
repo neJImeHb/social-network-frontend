@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import axios from "axios";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 
 import { CreateChat } from "../components/CreateChat";
 
+import { FaCircle } from "react-icons/fa6";
+
 const Friends = () => {
     const { username } = useParams()
+    const navigate = useNavigate();
 
     const [from, setFrom] = useState({
         'id': '',
@@ -45,6 +48,7 @@ const Friends = () => {
 
     const [friendList, setFriendList] = useState([])
     const [userList, setUsersList] = useState([])
+    const [avatarList, setAvatarList] = useState([])
     const [notFound, setNotFound] = useState('')
 
     const CheckFriendList = useCallback(async () => {
@@ -61,6 +65,8 @@ const Friends = () => {
                 if (response.data.not_found) {
                     setNotFound(response.data.not_found)
                 } else {
+                    setAvatarList(response.data.avatarList)
+                    console.log(response.data.avatarList)
                     setFriendList(response.data.friend_data)
                     setUsersList(response.data.user_data)
                 }
@@ -83,13 +89,12 @@ const Friends = () => {
                 })
                 .then(response => {
                     console.log(response.data)
+                    CheckNewRequests()
+                    CheckFriendList()
                 })
                 .catch(error => {
                     console.log(error)
                 })
-            setIsGetted(false)
-            CheckNewRequests()
-            CheckFriendList()
         }
     }
     const reject = async (request_id) => {
@@ -105,12 +110,12 @@ const Friends = () => {
                 })
                 .then(response => {
                     console.log(response.data)
+                    CheckNewRequests()
                 })
                 .catch(error => {
                     console.log(error)
                 })
             setIsGetted(false)
-            CheckNewRequests()
         }
     }
 
@@ -138,12 +143,64 @@ const Friends = () => {
         return user && (user.first_name.toLowerCase().includes(findUser.toLowerCase()) || user.last_name.toLowerCase().includes(findUser.toLowerCase()));
     });
 
+    const CreatingChat = async (user_id) => {
+        const chatID = await CreateChat(user_id);
+        if (chatID !== null) {
+            navigate(`/messages/chat/${chatID}/companion/${user_id}`);
+        } else { console.log('Error using CreateChat function') }
+    }
+
+    const socketRef = useRef(null);
+
+    const [currentStatus, setCurrentStatus] = useState([]);
+
+    useEffect(() => {
+        const initializeWebSocket = async () => {
+            const userIds = [];
+
+            filteredFriends.forEach(el => {
+                const u = userList.find(usr => usr.id === el.from_user || usr.id === el.to_user);
+                if (u) userIds.push(u.id);
+            });
+
+            if (!loader && !socketRef.current && userIds.length > 0) {
+                socketRef.current = new WebSocket(`ws://localhost:8000/ws/users/status/${userIds.join(',')}/`);
+
+                socketRef.current.onopen = () => {
+                    console.log('WebSocket connection established');
+                };
+
+                socketRef.current.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    console.log(`User ${data.user_id} status: ${data.new_status}, last activity: ${data.last_activity}`);
+
+                    // Обновление currentStatus с использованием setState
+                    setCurrentStatus(prevState => {
+                        const updatedStatus = prevState.filter(status => status.user_id !== data.user_id);
+                        updatedStatus.push({ 'user_id': data.user_id, 'new_status': data.new_status, 'last_activity': data.last_activity });
+                        return updatedStatus;
+                    });
+                };
+
+                socketRef.current.onclose = () => {
+                    console.log('WebSocket connection closed');
+                };
+
+                return () => {
+                    socketRef.current.close();
+                };
+            }
+        };
+
+        initializeWebSocket();
+    }, [loader, filteredFriends, userList, currentStatus]);
+
     return (
         <div style={{ width: '100%' }}>
             <title>{username}'s friends</title>
             {notFound ? <h1>{notFound}</h1> :
                 <div>
-                    {!loader &&
+                    {currentStatus && !loader &&
                         <div>
                             {isGetted &&
                                 <div style={{ display: 'flex' }}>
@@ -168,7 +225,7 @@ const Friends = () => {
                                         </button>
                                         <button className="option_friend" style={changeButton ? {} : button_styles} onClick={() => setChangeButton(false)}>
                                             Online friends
-                                            <span style={{ color: '#858585' }}> {userList.filter(f => f.last_activity === true).length}</span>
+                                            <span style={{ color: '#858585' }}> {currentStatus.filter(f => f.new_status === true).length}</span>
                                         </button>
                                     </div>
                                     <input className='friend_inp' placeholder='Find friends' onChange={(e) => setFindUser(e.target.value)} />
@@ -176,33 +233,58 @@ const Friends = () => {
                                         <div>
                                             {filteredFriends && filteredFriends.map((el, index) => {
                                                 const u = userList.find(usr => usr.id === el.from_user || usr.id === el.to_user);
+                                                const a = avatarList.find(avtr => avtr.id === el.from_user || avtr.id === el.to_user);
+                                                const status = currentStatus.find(status =>
+                                                    status.new_status === true &&
+                                                    String(status.user_id) === String(u.id)
+                                                );
                                                 return (
                                                     <div style={{ margin: '20px' }} key={el.id}>
-                                                        <Link className="sender_link" to={`/profile/${u.username}`}>{u.first_name} {u.last_name}</Link>
-                                                        <p style={{ opacity: '0.3' }}>You have been friends since {el.date_friend}</p>
-                                                        <Link className="send_msg" onClick={() => CreateChat(u.id)}>Send message</Link>
-                                                        {index !== filteredFriends.length - 1 && <hr style={{ opacity: '0.5', borderTop: '1px solid #333' }}></hr>}
+                                                        <div style={{ display: 'flex', position: 'relative' }}>
+                                                            {status && <FaCircle style={{ color: '#2ed600', position: 'absolute', top: '90px', zIndex: '1', left: '93px' }} />}
+                                                            {a && <img src={a.avatar_url} alt='some' style={{ width: '125px', height: '150px', clipPath: 'circle(40%)', marginTop: '-15px', marginRight: '10px' }} />}
+                                                            <div style={{ marginTop: '15px' }}>
+                                                                <Link className="sender_link" to={`/profile/${u.username}`}>{u.first_name} {u.last_name}</Link>
+                                                                <p style={{ opacity: '0.3' }}>You have been friends since {el.date_friend}</p>
+                                                                <Link className="send_msg" onClick={() => CreatingChat(u.id)}>Send message</Link>
+                                                            </div>
+                                                        </div>
+                                                        {index !== filteredFriends.length - 1 && <hr style={{ opacity: '0.5', borderTop: '1px solid #333', marginTop: '-10px' }}></hr>}
                                                     </div>
-                                                )
+                                                );
                                             })}
                                         </div>
                                         :
                                         <div>
-                                            {filteredFriends && filteredFriends.map((el, index) => {
+                                            {currentStatus && filteredFriends && filteredFriends.map((el, index) => {
                                                 const user = userList.find(usr => usr.id === el.from_user || usr.id === el.to_user);
-                                                const isActive = user?.last_activity === true;
+                                                const a = avatarList.find(avtr => avtr.id === el.from_user || avtr.id === el.to_user);
+
+                                                // Найдем статус этого пользователя
+                                                const status = currentStatus.find(status =>
+                                                    status.new_status === true &&
+                                                    String(status.user_id) === String(user.id)
+                                                );
+
+                                                const statusLength = currentStatus.filter(f => f.new_status === true).length
+
+                                                // Пропускаем рендеринг, если статус не онлайн
+                                                if (!status) return null;
+
                                                 return (
-                                                    <div key={el.id}>
-                                                        {isActive &&
-                                                            <div style={{ margin: '20px' }}>
+                                                    <div key={el.id} style={{ margin: '20px' }}>
+                                                        <div style={{ display: 'flex', position: 'relative' }}>
+                                                            {status && <FaCircle style={{ color: '#2ed600', position: 'absolute', top: '90px', zIndex: '1', left: '93px' }} />}
+                                                            {a && <img src={a.avatar_url} alt='some' style={{ width: '125px', height: '150px', clipPath: 'circle(40%)', marginTop: '-15px', marginRight: '10px' }} />}
+                                                            <div style={{ marginTop: '15px' }}  >
                                                                 <Link className="sender_link" to={`/profile/${user.username}`}>{user.first_name} {user.last_name}</Link>
                                                                 <p style={{ opacity: '0.3' }}>You have been friends since {el.date_friend}</p>
-                                                                <Link className="send_msg" onClick={() => CreateChat(user.id)}>Send message</Link>
-                                                                {index === filteredFriends.length - 1 && <hr style={{ opacity: '0.5', borderTop: '1px solid #333' }}></hr>}
+                                                                <Link className="send_msg" onClick={() => CreatingChat(user.id)}>Send message</Link>
                                                             </div>
-                                                        }
+                                                        </div>
+                                                        {index !== statusLength && statusLength > 1 && <hr style={{ opacity: '0.5', borderTop: '1px solid #333', marginTop: '-10px' }}></hr>}
                                                     </div>
-                                                )
+                                                );
                                             })}
                                         </div>
                                     }

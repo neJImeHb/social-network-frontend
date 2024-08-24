@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate} from "react-router-dom";
 
 import { Info } from "../components/Info";
 
-const EditProfile = () => {
+const EditProfile = ({username}) => {
+    const navigate = useNavigate()
+
+    const [loader, setLoader] = useState(false)
 
     const [status, setStatus] = useState('');
     const [biography, setBiography] = useState('')
@@ -40,6 +44,8 @@ const EditProfile = () => {
                 if (response.data.birthday_year) {
                     setYear(response.data.birthday_year);
                 }
+                setShow(response.data.show)
+                setLoader(true)
             } catch (error) {
                 console.log(error);
             }
@@ -68,6 +74,7 @@ const EditProfile = () => {
                         'birthday_day': day,
                         'birthday_month': month,
                         'birthday_year': year,
+                        'show': show
                     },
                     {
                         headers: {
@@ -94,8 +101,12 @@ const EditProfile = () => {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const years = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i);
 
+    const [show, setShow] = useState()
+
     return (
         <div style={{ width: '100%' }}>
+        {loader &&
+        <div>
             <title>Edit</title>
             {msg && 
                 <div style={noTime 
@@ -146,8 +157,13 @@ const EditProfile = () => {
                         <option className="edit_opt" key={el} value={el}>{el}</option>
                     ))}
                 </select>
+                <input type="checkbox" style={{marginLeft: '0px', height: '20px', width: '20px', marginRight: '10px', outline: '0', cursor: 'pointer'}} 
+                checked={show} onChange={(e) => setShow(e.target.checked)}/>
+                <p>Do not show my birthday</p>
             </div>
             <button className="save_butt" onClick={editBio}>Save</button>
+            <button className="save_butt" style={{float: 'left', backgroundColor: '#212121'}} onClick={() => navigate(`/profile/${username}`)}>Back</button>
+        </div>}
         </div>
     );
 };
